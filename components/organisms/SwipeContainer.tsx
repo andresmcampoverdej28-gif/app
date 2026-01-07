@@ -1,8 +1,10 @@
 // components/organisms/SwipeContainer.tsx
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { ActionButtonGroup, EmptyState, type Profile } from '../molecules';
-import CardsStack from './CardsStack';
+import { StyleSheet, View } from 'react-native';
+import type { Profile } from '../molecules';
+import { ActionButtonGroup, EmptyState } from '../molecules';
+// Importar CardsStack DESPUÉS de los otros imports
+import CardsStackComponent from './CardsStack';
 
 interface SwipeContainerProps {
   profiles: Profile[];
@@ -36,7 +38,7 @@ const SwipeContainer: React.FC<SwipeContainerProps> = ({
       {hasProfiles ? (
         <>
           {/* Stack de Cards */}
-          <CardsStack
+          <CardsStackComponent
             profiles={profiles}
             currentIndex={currentIndex}
             onSwipe={onSwipe}
