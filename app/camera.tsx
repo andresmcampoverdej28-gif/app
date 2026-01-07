@@ -1,71 +1,49 @@
-// app/gallery.tsx
+// app/camera.tsx
 import React from 'react';
 import { SafeAreaView, StyleSheet, Alert } from 'react-native';
-import { GalleryGrid } from '@/components/organisms';
-import { AppHeader, type GalleryPhoto } from '@/components/molecules';
+// ✅ IMPORT DIRECTO del archivo (no desde index)
+import CameraViewComponent from '@/components/organisms/CameraView';
 import { useGalleryPhotos } from '@/lib/store/galleryStore';
 import { useRouter } from 'expo-router';
 
-export default function Gallery() {
+export default function Camera() {
   const router = useRouter();
-  const { photos, isLoading, remove, refresh } = useGalleryPhotos();
+  const { add } = useGalleryPhotos();
 
-  const handlePhotoPress = (photo: GalleryPhoto) => {
-    Alert.alert(
-      'Ver Foto',
-      `Foto tomada el ${new Date(photo.timestamp || 0).toLocaleString()}`,
-      [
-        { text: 'Cerrar', style: 'cancel' },
-        {
-          text: 'Eliminar',
-          style: 'destructive',
-          onPress: () => handlePhotoDelete(photo),
-        },
-      ]
-    );
-  };
-
-  const handlePhotoDelete = async (photo: GalleryPhoto) => {
-    Alert.alert(
-      'Eliminar foto',
-      '¿Estás seguro de que quieres eliminar esta foto?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Eliminar',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await remove(photo.id);
-              Alert.alert('✅ Foto eliminada');
-            } catch (error) {
-              Alert.alert('Error', 'No se pudo eliminar la foto');
-            }
+  const handlePhotoTaken = async (uri: string) => {
+    console.log('📸 Foto capturada:', uri); // Debug
+    try {
+      await add(uri);
+      
+      Alert.alert(
+        '¡Foto guardada! 📸',
+        '¿Qué quieres hacer ahora?',
+        [
+          { 
+            text: 'Ver Galería', 
+            onPress: () => router.push('/gallery') 
           },
-        },
-      ]
-    );
+          { 
+            text: 'Tomar Otra', 
+            style: 'cancel' 
+          },
+          { 
+            text: 'Ver en Index', 
+            onPress: () => router.push('/') 
+          },
+        ]
+      );
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo guardar la foto');
+      console.error('Error guardando foto:', error);
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <AppHeader 
-        title="Galería" 
-        showCameraButton={true}
-        onCameraPress={() => router.push('/camera')}
-      />
-      
-      <GalleryGrid
-        photos={photos}
-        onPhotoPress={handlePhotoPress}
-        onPhotoDelete={handlePhotoDelete}
-        showDeleteButton={true}
-        emptyStateTitle="No hay fotos"
-        emptyStateSubtitle="Toma tu primera foto con la cámara"
-        emptyStateButtonText="Ir a Cámara"
-        onEmptyStateButtonPress={() => router.push('/camera')}
-        refreshing={isLoading}
-        onRefresh={refresh}
+      <CameraViewComponent
+        onPhotoTaken={handlePhotoTaken}
+        defaultCameraType="back"
       />
     </SafeAreaView>
   );

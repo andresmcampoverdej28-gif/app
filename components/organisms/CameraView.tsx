@@ -1,107 +1,170 @@
-// components/molecules/CameraControls.tsx
-import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+// components/organisms/CameraView.tsx
+import React, { useRef, useState } from 'react';
+import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { CameraView as ExpoCamera, CameraType, useCameraPermissions } from 'expo-camera';
+import { CameraControls } from '../molecules';
 
-interface CameraControlsProps {
-  onCapture: () => void;
-  onFlipCamera?: () => void;
+interface CameraViewProps {
+  onPhotoTaken?: (uri: string) => void;
   onClose?: () => void;
-  disabled?: boolean;
+  defaultCameraType?: CameraType;
 }
 
-const CameraControls: React.FC<CameraControlsProps> = ({
-  onCapture,
-  onFlipCamera,
+const CameraView: React.FC<CameraViewProps> = ({
+  onPhotoTaken,
   onClose,
-  disabled = false,
+  defaultCameraType = 'back',
 }) => {
+  const [facing, setFacing] = useState<CameraType>(defaultCameraType);
+  const [permission, requestPermission] = useCameraPermissions();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const cameraRef = useRef<ExpoCamera>(null);
+
+  const toggleCameraFacing = () => {
+    setFacing((current) => (current === 'back' ? 'front' : 'back'));
+  };
+
+  const takePicture = async () => {
+    if (!cameraRef.current || isProcessing) return;
+
+    try {
+      setIsProcessing(true);
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 0.8,
+        base64: false,
+        exif: false,
+      });
+
+      if (photo && onPhotoTaken) {
+        onPhotoTaken(photo.uri);
+      }
+    } catch (error) {
+      console.error('Error al tomar foto:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Estado de carga de permisos
+  if (!permission) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Cargando cámara...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Sin permisos
+  if (!permission.granted) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.permissionContainer}>
+          <Text style={styles.permissionTitle}>Se necesita acceso a la cámara</Text>
+          <Text style={styles.permissionText}>
+            Para tomar fotos, necesitamos permiso para acceder a tu cámara.
+          </Text>
+          <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
+            <Text style={styles.permissionButtonText}>Dar Permiso</Text>
+          </TouchableOpacity>
+          {onClose && (
+            <TouchableOpacity style={styles.closeTextButton} onPress={onClose}>
+              <Text style={styles.closeText}>Cerrar</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  }
+
+  // Cámara lista
   return (
     <View style={styles.container}>
-      {/* Botón Flip/Toggle Camera */}
-      {onFlipCamera && (
-        <TouchableOpacity
-          style={styles.sideButton}
-          onPress={onFlipCamera}
-          disabled={disabled}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="camera-reverse" size={32} color="#00ffff" />
-        </TouchableOpacity>
-      )}
+      <ExpoCamera style={styles.camera} facing={facing} ref={cameraRef}>
+        <View style={styles.cameraOverlay} />
+      </ExpoCamera>
 
-      {/* Botón Captura Central */}
-      <TouchableOpacity
-        style={[styles.captureButton, disabled && styles.captureButtonDisabled]}
-        onPress={onCapture}
-        disabled={disabled}
-        activeOpacity={0.8}
-      >
-        <View style={styles.captureButtonInner} />
-      </TouchableOpacity>
-
-      {/* Botón Cerrar */}
-      {onClose && (
-        <TouchableOpacity
-          style={styles.sideButton}
-          onPress={onClose}
-          disabled={disabled}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="close" size={32} color="#ff0090" />
-        </TouchableOpacity>
-      )}
+      <CameraControls
+        onCapture={takePicture}
+        onFlipCamera={toggleCameraFacing}
+        onClose={onClose}
+        disabled={isProcessing}
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingVertical: 30,
-    paddingHorizontal: 20,
-    backgroundColor: '#2d0054',
-    borderTopWidth: 3,
-    borderTopColor: '#ff00ff',
+    flex: 1,
+    backgroundColor: '#1a0033',
   },
-  captureButton: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#00ffff',
+  camera: {
+    flex: 1,
+  },
+  cameraOverlay: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  loadingContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 4,
-    borderColor: '#ff00ff',
-    shadowColor: '#00ffff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 15,
-    elevation: 15,
   },
-  captureButtonDisabled: {
-    opacity: 0.5,
+  loadingText: {
+    color: '#00ffff',
+    fontSize: 18,
   },
-  captureButtonInner: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#2d0054',
+  permissionContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  permissionTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#00ffff',
+    marginBottom: 10,
+    textAlign: 'center',
+    textShadowColor: '#ff00ff',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 5,
+  },
+  permissionText: {
+    fontSize: 16,
+    color: '#ffffff',
+    textAlign: 'center',
+    marginBottom: 30,
+    lineHeight: 24,
+  },
+  permissionButton: {
+    backgroundColor: '#ff0090',
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 25,
     borderWidth: 3,
     borderColor: '#ff00ff',
+    shadowColor: '#ff00ff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 10,
+    elevation: 10,
   },
-  sideButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#2d0054',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#ff00ff',
+  permissionButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  closeTextButton: {
+    marginTop: 20,
+  },
+  closeText: {
+    color: '#00ffff',
+    fontSize: 16,
+    textDecorationLine: 'underline',
   },
 });
 
-export default CameraControls;
+export default CameraView;

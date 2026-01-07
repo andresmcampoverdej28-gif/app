@@ -1,7 +1,8 @@
 // app/index.tsx
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView, StyleSheet, Alert } from 'react-native';
-import { SwipeContainer } from '@/components/organisms';
+// ✅ IMPORT DIRECTO para evitar conflictos
+import SwipeContainerComponent from '@/components/organisms/SwipeContainer';
 import { AppHeader, type Profile } from '@/components/molecules';
 import { useSwipeLogic } from '@/lib/ui/useSwipeLogic';
 import { useGalleryPhotos } from '@/lib/store/galleryStore';
@@ -45,7 +46,7 @@ export default function Index() {
           showCameraButton={true}
           onCameraPress={() => router.push('/camera')}
         />
-        <SwipeContainer
+        <SwipeContainerComponent
           profiles={[]}
           currentIndex={0}
           onSwipe={swipe}
@@ -69,7 +70,7 @@ export default function Index() {
         onCameraPress={() => router.push('/camera')}
       />
       
-      <SwipeContainer
+      <SwipeContainerComponent
         profiles={profiles}
         currentIndex={currentIndex}
         onSwipe={swipe}

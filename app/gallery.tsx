@@ -1,9 +1,11 @@
+// app/gallery.tsx
+import React from 'react';
+import { SafeAreaView, StyleSheet, Alert } from 'react-native';
+// ✅ IMPORT DIRECTO para evitar conflictos
+import GalleryGridComponent from '@/components/organisms/GalleryGrid';
 import { AppHeader, type GalleryPhoto } from '@/components/molecules';
-import { GalleryGrid } from '@/components/organisms';
 import { useGalleryPhotos } from '@/lib/store/galleryStore';
 import { useRouter } from 'expo-router';
-import React from 'react';
-import { Alert, SafeAreaView, StyleSheet } from 'react-native';
 
 export default function Gallery() {
   const router = useRouter();
@@ -54,7 +56,7 @@ export default function Gallery() {
         onCameraPress={() => router.push('/camera')}
       />
       
-      <GalleryGrid
+      <GalleryGridComponent
         photos={photos}
         onPhotoPress={handlePhotoPress}
         onPhotoDelete={handlePhotoDelete}
